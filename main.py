@@ -1,15 +1,18 @@
 # Import and initialize the pygame library
 import pygame
 import random
+import constants
+from snake import *
 
 pygame.init()
 
-width = 500
-height = 500
-dt = 0 # delta time - seconds
+dt = 0  # delta time - seconds
 
-screen = pygame.display.set_mode([width, height])
+screen = pygame.display.set_mode([constants.windowWidth, constants.windowHeight])
 clock = pygame.time.Clock()
+
+snake = Snake()
+
 
 # Run until the user asks to quit
 running = True
@@ -23,13 +26,12 @@ while running:
     mouses = pygame.mouse.get_pressed()
 
     ## Update
-
+    snake.update(dt)
 
     ## Draw
     # Fill the background with white
     screen.fill((0, 0, 0))
-    pygame.draw.circle(screen, (100,100,100), (50, 50), 10)
-
+    snake.draw(screen, dt)
     # Flip the display
     pygame.display.flip()
 
