@@ -7,6 +7,7 @@ class CollisionComp:
     def __init__(self, x, y, size):
         self.position = Vector2(x, y)
         self.size = size
+        self.isDead = False
 
     def getCenter(self):
         return self.position * constants.TILE_SIZE.x + Vector2(

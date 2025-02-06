@@ -6,6 +6,7 @@ import constants
 
 class Player:
     def __init__(self):
+        self.name = "player"
         self.collisionComp = CollisionComp(5, 5, constants.PLAYER_SIZE)
         self.speed = constants.PLAYER_SPEED
         self.direction = Vector2(0, 0)
@@ -13,14 +14,24 @@ class Player:
         self.remainingMoveTime = 0
         self.last_direction_key = None
 
-    def update(self, dt, pressed_keys):
+    def update(self, app):
         if self.direction.length() == 0:
             return
 
         if constants.PLAYER_MOVE_TYPE == 1:
-            self.moveV1(dt)
+            self.moveV1(app.dt)
         else:
-            self.moveV2(dt)
+            self.moveV2(app.dt)
+
+    def checkIsDead(self):
+        return self.collisionComp.isDead
+
+    # return collisionComp containers
+    def getCollisionSubjects(self):
+        return [self]
+
+    def handleCollision(self, target):
+        pass
 
     def handleEvent(self, event):
         if event.type == pygame.KEYDOWN:
@@ -50,9 +61,9 @@ class Player:
         self.remainingMoveTime = 1 / self.speed
         self.collisionComp.position += self.direction
 
-    def draw(self, window):
+    def draw(self, app):
         pygame.draw.circle(
-            window,
+            app.screen,
             self.color,
             self.collisionComp.getCenter(),
             self.collisionComp.size / 2,

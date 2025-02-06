@@ -1,13 +1,13 @@
 import pygame
-import datetime
 import constants
 from pygame.math import Vector2
 from collisionComp import *
 
 
 class Snake:
-    def __init__(self):
-        self.head = SnakeHead(constants.START_SNAKE_X, constants.START_SNAKE_Y)
+    def __init__(self, x, y):
+        self.name = "snake"
+        self.head = SnakeHead(x, y)
         self.nodes = []
         for i in range(constants.INIT_NODE_LENGTH):
             self.nodes.append(
@@ -18,38 +18,38 @@ class Snake:
         self.direction = Vector2(1, 0)
         self.remainingMoveTime = 0
 
-    def checkIsCollided(self, target):
-        if self.head.checkIsCollided(target):
-            return True
-        for x in self.nodes:
-            if x.checkIsCollided(target):
-                return True
-        return False
+    # return collisionComp containers
+    def getCollisionSubjects(self):
+        collisionSubs = self.nodes.copy()
+        collisionSubs.append(self.head)
+        return collisionSubs
+
+    def checkIsDead(self):
+        return self.head.collisionComp.isDead
 
     def reset(self):  # run per frame
         self.head.color = constants.SNAKE_HEAD_COLOR
         for i in self.nodes:
             i.color = constants.SNAKE_NODE_COLOR
 
-    def update(self, dt, player):
+    def update(self, app):
         self.reset()
-        self.trackingTarget(player.collisionComp.position)
-        self.remainingMoveTime -= dt
+        self.trackingTarget(app.player.collisionComp.position)
+        self.remainingMoveTime -= app.dt
 
         if self.remainingMoveTime <= 0:
             self.remainingMoveTime = 1 / self.speed
             self.onMove()
 
-        self.checkAndHandleCollision(player)
-
-    def checkAndHandleCollision(self, target):
-        if self.checkIsCollided(target):
+    def handleCollision(self, target):
+        if target.name == "player":
             self.head.color = constants.SNAKE_HEAD_COLOR_2
             for i in self.nodes:
                 i.color = constants.SNAKE_HEAD_COLOR_2
+            pygame.event.post(pygame.event.Event(constants.PLAYER_DEAD_EVENT))
 
     def trackingTarget(self, target: Vector2):
-        if len(target) == 0:
+        if (self.head.collisionComp.position - target).length() == 0:
             return
 
         dx = target.x - self.head.collisionComp.position.x
@@ -74,10 +74,10 @@ class Snake:
             self.nodes[0].update(self.head)
         self.head.update(self.direction)
 
-    def draw(self, window, dt):
+    def draw(self, app):
         for x in self.nodes:
-            x.draw(window)
-        self.head.draw(window)
+            x.draw(app.screen)
+        self.head.draw(app.screen)
 
 
 class SnakeNode:
@@ -85,9 +85,6 @@ class SnakeNode:
         self.collisionComp = CollisionComp(x, y, constants.SNAKE_SIZE)
         self.color = color
         pass
-
-    def checkIsCollided(self, target):
-        return self.collisionComp.checkCollision(target.collisionComp)
 
     def update(self, nextNode):
         self.updatePosition(nextNode.collisionComp.position)
