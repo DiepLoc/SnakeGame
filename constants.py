@@ -1,6 +1,18 @@
 import pygame
+from pygame.math import Vector2
 
-windowWidth = 500
-windowHeight = 500
-gridSize = pygame.math.Vector2(30, 20)
-tileSize = pygame.math.Vector2(20, 20)
+GRID_SIZE = Vector2(30, 30)
+TILE_SIZE = Vector2(20, 20)
+WINDOW_WIDTH = GRID_SIZE.x * TILE_SIZE.x
+WINDOW_HEIGHT = GRID_SIZE.y * TILE_SIZE.y
+WINDOW_RECT = pygame.Rect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT)
+INIT_NODE_LENGTH = 5
+START_SNAKE_X = 2
+START_SNAKE_Y = 2
+SNAKE_SPEED = 4  # tiles per second
+PLAYER_SPEED = 5
+PLAYER_COLOR = (0, 200, 200)
+SNAKE_HEAD_COLOR = (255, 255, 255)
+SNAKE_NODE_COLOR = (150, 150, 150)
+GAME_SPEED_SCALE = 2
+PLAYER_MOVE_TYPE = 1  # 1: smooth / 2: in rhythm (snake-like)
