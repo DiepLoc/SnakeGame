@@ -1,5 +1,6 @@
 import pygame
 import constants
+import utilities
 from pygame.math import Vector2
 from collisionComp import *
 
@@ -7,16 +8,34 @@ from collisionComp import *
 class Snake:
     def __init__(self, x, y):
         self.name = "snake"
-        self.head = SnakeHead(x, y)
-        self.nodes = []
+        self.head = SnakeHead(x, y, self)
+        self.nodes: list[SnakeNode] = []
         for i in range(constants.INIT_NODE_LENGTH):
             self.nodes.append(
-                SnakeNode(constants.START_SNAKE_X - i - 1, constants.START_SNAKE_Y)
+                SnakeNode(
+                    constants.START_SNAKE_X - i - 1, constants.START_SNAKE_Y, self
+                )
             )
 
         self.speed = constants.SNAKE_SPEED  # tiles per second
         self.direction = Vector2(1, 0)
         self.remainingMoveTime = 0
+
+    def addLength(self, changeLength=1):
+        for i in range(0, changeLength):
+            currentLastNode = self.nodes[self.nodes.__len__() - 1]
+            self.nodes.append(
+                SnakeNode(
+                    currentLastNode.collisionComp.position.x,
+                    currentLastNode.collisionComp.position.y,
+                    self,
+                )
+            )
+
+    def changeSize(self, changeSize):
+        self.head.collisionComp.changeSize(changeSize)
+        for x in self.nodes:
+            x.collisionComp.changeSize(changeSize)
 
     # return collisionComp containers
     def getCollisionSubjects(self):
@@ -32,6 +51,14 @@ class Snake:
         for i in self.nodes:
             i.color = constants.SNAKE_NODE_COLOR
 
+    def shootBullet(self):
+        data = utilities.ShootBulletEventData(
+            self.head.collisionComp.position, self.direction
+        )
+        pygame.event.post(
+            pygame.event.Event(constants.SNAKE_SHOOT_BULLET_EVENT, {"data": data})
+        )
+
     def update(self, app):
         self.reset()
         self.trackingTarget(app.player.collisionComp.position)
@@ -46,6 +73,7 @@ class Snake:
             self.head.color = constants.SNAKE_HEAD_COLOR_2
             for i in self.nodes:
                 i.color = constants.SNAKE_HEAD_COLOR_2
+
             pygame.event.post(pygame.event.Event(constants.PLAYER_DEAD_EVENT))
 
     def trackingTarget(self, target: Vector2):
@@ -81,10 +109,11 @@ class Snake:
 
 
 class SnakeNode:
-    def __init__(self, x, y, color=constants.SNAKE_NODE_COLOR):
+    def __init__(self, x, y, snake: Snake, color=constants.SNAKE_NODE_COLOR):
         self.collisionComp = CollisionComp(x, y, constants.SNAKE_SIZE)
         self.color = color
-        pass
+        self.snake = snake
+        self.name = "snake-node"
 
     def update(self, nextNode):
         self.updatePosition(nextNode.collisionComp.position)
@@ -102,8 +131,8 @@ class SnakeNode:
 
 
 class SnakeHead(SnakeNode):
-    def __init__(self, x, y):
-        super().__init__(x, y, constants.SNAKE_HEAD_COLOR)
+    def __init__(self, x, y, snake):
+        super().__init__(x, y, snake, constants.SNAKE_HEAD_COLOR)
 
     def update(self, vecDir: Vector2):
         if vecDir.length_squared != 0:

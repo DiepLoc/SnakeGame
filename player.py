@@ -12,7 +12,6 @@ class Player:
         self.direction = Vector2(0, 0)
         self.color = constants.PLAYER_COLOR
         self.remainingMoveTime = 0
-        self.last_direction_key = None
 
     def update(self, app):
         if self.direction.length() == 0:
@@ -37,21 +36,17 @@ class Player:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_p:  # for debugging
                 a = 1
-            if event.key == pygame.K_w and self.last_direction_key != pygame.K_s:
+            if event.key == pygame.K_w:
                 self.direction = Vector2(0, -1)
-                self.last_direction_key = pygame.K_w
-            elif event.key == pygame.K_s and self.last_direction_key != pygame.K_w:
+            elif event.key == pygame.K_s:
                 self.direction = Vector2(0, 1)
-                self.last_direction_key = pygame.K_s
-            elif event.key == pygame.K_a and self.last_direction_key != pygame.K_d:
+            elif event.key == pygame.K_a:
                 self.direction = Vector2(-1, 0)
-                self.last_direction_key = pygame.K_a
-            elif event.key == pygame.K_d and self.last_direction_key != pygame.K_a:
+            elif event.key == pygame.K_d:
                 self.direction = Vector2(1, 0)
-                self.last_direction_key = pygame.K_d
 
     def moveV1(self, dt):
-        self.collisionComp.position += dt * self.speed * self.direction.normalize()
+        self.collisionComp.onSmoothMove(dt, self.speed, self.direction)
 
     def moveV2(self, dt):
         self.remainingMoveTime -= dt

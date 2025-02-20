@@ -11,6 +11,7 @@ START_SNAKE_X = 10
 START_SNAKE_Y = 10
 SNAKE_SPEED = 0.1  # tiles per second
 PLAYER_SPEED = 1
+SLOW_BULLET_SPEED = 1
 PLAYER_COLOR = (0, 200, 200)
 SNAKE_HEAD_COLOR = (255, 255, 255)
 SNAKE_HEAD_COLOR_2 = (255, 0, 0)
@@ -23,3 +24,4 @@ PLAYER_MOVE_TYPE = 1  # 1: smooth / 2: step by step (snake-like)
 
 # user events
 PLAYER_DEAD_EVENT = pygame.USEREVENT + 1
+SNAKE_SHOOT_BULLET_EVENT = pygame.USEREVENT + 2

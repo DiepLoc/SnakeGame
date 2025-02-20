@@ -1,5 +1,6 @@
 import pygame
 import constants
+import utilities
 from pygame.math import Vector2
 
 
@@ -13,6 +14,13 @@ class CollisionComp:
         return self.position * constants.TILE_SIZE.x + Vector2(
             self.size / 2, self.size / 2
         )
+
+    def changeSize(self, changeAmount):
+        self.size = utilities.clamp(self.size + changeAmount, 5, 30)
+
+    def onSmoothMove(self, dt, speed, direction: Vector2):
+        if direction.length() != 0:
+            self.position += dt * speed * direction.normalize()
 
     def checkCollision(self, other):
         selfCenter = self.getCenter()

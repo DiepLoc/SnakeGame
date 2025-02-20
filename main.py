@@ -2,6 +2,7 @@
 import pygame
 import random
 import constants
+import utilities
 from snake import *
 from player import *
 from powerUp import *
@@ -21,7 +22,7 @@ class App:
         self.clock = pygame.time.Clock()
         self.objs = []
         self.player = None  # for Player reference
-        self.remaningSpawnPowerTime = 5
+        self.remaningSpawnPowerTime = 3
         self.events = []
         self.isGameOver = False
         self.pressed_keys = []
@@ -52,6 +53,9 @@ class App:
                     b.handleCollision(a)
                     return
 
+    def addObject(self, obj):
+        self.objs.append(obj)
+
     def run(self):
         self.reset()
         running = True
@@ -73,6 +77,9 @@ class App:
                 ):
                     running = False
 
+                if event.type == constants.SNAKE_SHOOT_BULLET_EVENT:
+                    self.onShootBullet(event.data)
+
                 self.player.handleEvent(event)
 
             self.pressed_keys = pygame.key.get_pressed()
@@ -88,6 +95,16 @@ class App:
             self.dt = self.clock.tick(60) / 1000 * constants.GAME_SPEED_SCALE
 
         self.run()
+
+    def onShootBullet(self, data: utilities.ShootBulletEventData):
+        newBullet = PowerUp(
+            data.tilePos.x,
+            data.tilePos.y,
+            SlowBulletInfo(),
+            constants.SLOW_BULLET_SPEED,
+            data.direction,
+        )
+        self.addObject(newBullet)
 
     def update(self):
         if self.isGameOver:
@@ -111,14 +128,21 @@ class App:
     def powerUpUpdate(self):
         self.remaningSpawnPowerTime -= self.dt
         if self.remaningSpawnPowerTime <= 0:
-            self.remaningSpawnPowerTime = 5
-            self.objs.append(PowerUp(6, 5, self.generatePlayerPowerUp()))
+            self.remaningSpawnPowerTime = 20
+            self.generateTeleportInfo()
 
-    def generatePlayerPowerUp(self):
-        def speedUp(p):
-            p.speed += 5
+    def generateSpeedUpInfo(self):
+        self.objs.append(PowerUp(6, 5, SpeedUpInfo()))
 
-        return speedUp
+    def generateTeleportInfo(self):
+        teleport1 = TeleportInfo()
+        teleport2 = TeleportInfo()
+        teleportPower1 = PowerUp(15, 0, teleport1)
+        teleportPower2 = PowerUp(0, 15, teleport2)
+        teleport1.linkTeleport(teleportPower2)
+        teleport2.linkTeleport(teleportPower1)
+        self.objs.append(teleportPower1)
+        self.objs.append(teleportPower2)
 
     def draw(self):
         self.screen.fill((0, 0, 0))  # clean screen
