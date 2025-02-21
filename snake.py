@@ -60,11 +60,12 @@ class Snake(utilities.GameObject):
         )
 
     def updateShoot(self, app):
+        self.remainingShootTime -= app.dt
         if (
             app.getGameState() >= 1
             and self.remainingShootTime <= 0
             and random.randint(0, 120) == 0
-        ):  # 120 frames ~ every 2 seconds
+        ):  # 120 frames ~ 2 seconds
             self.shootBullet()
             self.remainingShootTime = constants.SNAKE_SHOOT_DELAY_TIME
 
@@ -72,7 +73,7 @@ class Snake(utilities.GameObject):
         self.reset()
         self.trackingTarget(app.player.collisionComp.position)
         self.updateShoot(app)
-        self.updateSpeed(app)
+        self.updateSpeedAndLastDirection(app)
 
         self.remainingMoveTime -= app.dt
         if self.remainingMoveTime <= 0:
@@ -114,9 +115,9 @@ class Snake(utilities.GameObject):
         self.head.update(self.direction)
 
     def draw(self, app):
-        for x in self.nodes:
-            x.draw(app.screen)
-        self.head.draw(app.screen)
+        for x in reversed(self.nodes):
+            x.draw(app)
+        self.head.draw(app)
 
 
 class SnakeNode:
@@ -132,12 +133,13 @@ class SnakeNode:
     def updatePosition(self, newPos):
         self.collisionComp.position = newPos
 
-    def draw(self, window: pygame.surface):
-        pygame.draw.circle(
-            window,
-            self.color,
+    def draw(self, app):
+        utilities.drawImage(
+            app.screen,
+            app.snakeNodeImage,
+            self.collisionComp.size,
             self.collisionComp.getCenter(),
-            self.collisionComp.size / 2,
+            self.snake.lastDirection,
         )
 
 
@@ -149,5 +151,11 @@ class SnakeHead(SnakeNode):
         if vecDir.length_squared != 0:
             self.updatePosition(self.collisionComp.position + vecDir.normalize())
 
-    def draw(self, window: pygame.surface):
-        super().draw(window)
+    def draw(self, app):
+        utilities.drawImage(
+            app.screen,
+            app.snakeHeadImage,
+            self.collisionComp.size,
+            self.collisionComp.getCenter(),
+            self.snake.lastDirection,
+        )

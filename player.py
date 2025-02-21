@@ -14,7 +14,7 @@ class Player(utilities.GameObject):
         self.remainingMoveTime = 0
 
     def update(self, app):
-        self.updateSpeed(app)
+        self.updateSpeedAndLastDirection(app)
 
         if self.direction.length() == 0:
             return
@@ -65,9 +65,16 @@ class Player(utilities.GameObject):
         )
 
     def draw(self, app):
-        pygame.draw.circle(
+        # pygame.draw.circle(
+        #     app.screen,
+        #     self.color,
+        #     self.collisionComp.getCenter(),
+        #     self.collisionComp.size / 2,
+        # )
+        utilities.drawImage(
             app.screen,
-            self.color,
+            app.playerImage,
+            self.collisionComp.size,
             self.collisionComp.getCenter(),
-            self.collisionComp.size / 2,
+            self.lastDirection,
         )

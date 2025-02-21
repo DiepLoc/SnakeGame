@@ -1,6 +1,7 @@
 # Import and initialize the pygame library
 import pygame
 import random
+import os
 import constants
 import utilities
 from snake import *
@@ -29,6 +30,21 @@ class App:
         self.pressed_mouses = []
         self.playerPoint = 0
         self.snakeSpawnRemainingTime = constants.SNAKE_SPAWN_DELAY_TIME
+        self.loadImages()
+
+    def loadAndGetImageByFileName(self, fileName):
+        return pygame.image.load(os.path.join("images", fileName)).convert_alpha()
+
+    def loadImages(self):
+        # images
+        self.playerImage = self.loadAndGetImageByFileName("snake-mouse.png")
+        self.snakeHeadImage = self.loadAndGetImageByFileName("snake-snake-head.png")
+        self.snakeNodeImage = self.loadAndGetImageByFileName("snake-snake-node.png")
+        self.slowBulletImage = self.loadAndGetImageByFileName("snake-slow-bullet.png")
+        self.teleportImage = self.loadAndGetImageByFileName("snake-teleport.png")
+        self.lemonImage = self.loadAndGetImageByFileName("snake-lemon.png")
+        self.appleImage = self.loadAndGetImageByFileName("snake-apple.png")
+        self.chocolateImage = self.loadAndGetImageByFileName("snake-chocolate.png")
 
     def getGameState(self) -> int:
         if self.playerPoint < 10:
@@ -95,7 +111,7 @@ class App:
 
                 if event.type == constants.GOT_FRUIT_EVENT:
                     self.playerPoint += 1
-                    self.speedUpToAllSnakes()
+                    # self.speedUpToAllSnakes()
 
                 self.player.handleEvent(event)
 
@@ -187,7 +203,9 @@ class App:
         return Vector2(randomX, randomY)
 
     def getValidRandomTilePosition(
-        self, exclusionTiles: list = [], minExclusionDistance=20
+        self,
+        exclusionTiles: list = [],
+        minExclusionDistance=constants.MIN_TWIN_TELEPORT_DISTANCE,
     ) -> Vector2:
         randomPos = Vector2(0, 0)
         success = False
@@ -215,7 +233,7 @@ class App:
             for x in allCollisionSubjects:
                 vector: Vector2 = randomPos - x.collisionComp.position
                 distance = vector.length()
-                if distance < 4:
+                if distance < constants.MIN_POWER_UP_DISTANCE:
                     success = False
                     break
 
@@ -252,7 +270,7 @@ class App:
                 PowerUp.generateTeleportPower(self)
 
     def draw(self):
-        self.screen.fill((0, 0, 0))  # clean screen
+        self.screen.fill(constants.BACKGROUND_COLOR)  # clean screen
         # game over
         if self.isGameOver:
             text_surface = my_font.render(
@@ -269,7 +287,7 @@ class App:
 
         # draw player point
         point_surface = my_font.render(
-            f"Point: {self.playerPoint}, Objs: {self.objs.__len__()}, Speed: {self.player.speed}",
+            f"Point: {self.playerPoint}, Objs: {self.objs.__len__()}, Speed: {self.player.speed}, dir: {utilities.getAngleBy4DVector(self.player.lastDirection)}",
             False,
             (255, 255, 0),
         )

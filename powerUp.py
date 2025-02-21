@@ -11,15 +11,17 @@ from snake import *
 class PowerUp(utilities.GameObject):
     def __init__(
         self,
+        image,
         x,
         y,
         powerInfo,
-        color=(0, 0, 255),
+        color="white",
         speed=0,
-        direction=Vector2(0, 0),
+        direction=Vector2(0, 1),
         lifeTime=None,
     ):
         super().__init__(speed, direction)
+        self.image = image
         self.name = "power-up"
         self.collisionComp = CollisionComp(x, y, constants.POWER_UP_SIZE)
         self.powerInfo: PowerUpInfo = powerInfo
@@ -37,7 +39,7 @@ class PowerUp(utilities.GameObject):
             self.collisionComp.isDead = self.powerInfo.onSnakeApply(self, target)
 
     def update(self, app):
-        self.updateSpeed(app)
+        self.updateSpeedAndLastDirection(app)
         self.collisionComp.onSmoothMove(app.dt, self.speed, self.direction)
         if self.remainingLifeTime is not None:
             self.remainingLifeTime -= app.dt
@@ -48,22 +50,24 @@ class PowerUp(utilities.GameObject):
         return self.collisionComp.isDead
 
     def draw(self, app):
-        pygame.draw.circle(
+        utilities.drawImage(
             app.screen,
-            self.color,
+            self.image,
+            self.collisionComp.size,
             self.collisionComp.getCenter(),
-            self.collisionComp.size / 2,
+            self.lastDirection,
+            self.color,
         )
 
     @staticmethod
     def generateSpeedUpPower(app):
         pos = app.getValidRandomTilePosition()
-        app.addObject(PowerUp(pos.x, pos.y, SpeedUpInfo(0.5), "yellow"))
+        app.addObject(PowerUp(app.lemonImage, pos.x, pos.y, SpeedUpInfo(0.5)))
 
     @staticmethod
     def generateResizePower(app):
         pos = app.getValidRandomTilePosition()
-        app.addObject(PowerUp(pos.x, pos.y, ChangeSizeInfo(5), "blue"))
+        app.addObject(PowerUp(app.chocolateImage, pos.x, pos.y, ChangeSizeInfo(5)))
 
     # @staticmethod
     # def generateAddLengthPower(app):
@@ -73,7 +77,7 @@ class PowerUp(utilities.GameObject):
     @staticmethod
     def generateFruitPower(app):
         pos = app.getValidRandomTilePosition()
-        app.addObject(PowerUp(pos.x, pos.y, FruitInfo(), "red"))
+        app.addObject(PowerUp(app.appleImage, pos.x, pos.y, FruitInfo()))
 
     @staticmethod
     def generateTeleportPower(app):
@@ -82,12 +86,16 @@ class PowerUp(utilities.GameObject):
         pos1 = app.getValidRandomTilePosition()
         pos2 = app.getValidRandomTilePosition([pos1])
         randomColor = (
-            random.randint(0, 255),
-            random.randint(0, 255),
-            random.randint(0, 255),
+            random.randint(0, 200),
+            random.randint(0, 200),
+            random.randint(0, 200),
         )
-        teleportPower1 = PowerUp(pos1.x, pos1.y, teleport1, randomColor)
-        teleportPower2 = PowerUp(pos2.x, pos2.y, teleport2, randomColor)
+        teleportPower1 = PowerUp(
+            app.teleportImage, pos1.x, pos1.y, teleport1, randomColor
+        )
+        teleportPower2 = PowerUp(
+            app.teleportImage, pos2.x, pos2.y, teleport2, randomColor
+        )
         teleport1.linkTeleport(teleportPower2)
         teleport2.linkTeleport(teleportPower1)
         app.addObject(teleportPower1)
@@ -96,10 +104,11 @@ class PowerUp(utilities.GameObject):
     @staticmethod
     def generateSlowBullet(app, data: utilities.ShootBulletEventData):
         newBullet = PowerUp(
+            app.slowBulletImage,
             data.tilePos.x,
             data.tilePos.y,
             SlowBulletInfo(),
-            (240, 240, 240),
+            "white",
             constants.SLOW_BULLET_SPEED,
             data.direction,
             2,
