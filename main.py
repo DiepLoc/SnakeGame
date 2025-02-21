@@ -27,7 +27,17 @@ class App:
         self.isGameOver = False
         self.pressed_keys = []
         self.pressed_mouses = []
+        self.playerPoint = 0
+        self.snakeSpawnRemainingTime = constants.SNAKE_SPAWN_DELAY_TIME
 
+    def getGameState(self) -> int:
+        if self.playerPoint < 10:
+            return 0
+        if self.playerPoint < 20:
+            return 1
+        return 2
+
+    # run per new game
     def reset(self):
         self.objs = []
         snake = Snake(constants.START_SNAKE_X, constants.START_SNAKE_Y)
@@ -36,6 +46,8 @@ class App:
         self.objs.append(player)
         self.objs.append(snake)
         self.isGameOver = False
+        self.playerPoint = 0
+        self.snakeSpawnRemainingTime = constants.SNAKE_SPAWN_DELAY_TIME
 
     @staticmethod
     def checkAndHandleCollision(a, b):
@@ -79,6 +91,11 @@ class App:
 
                 if event.type == constants.SNAKE_SHOOT_BULLET_EVENT:
                     self.onShootBullet(event.data)
+                    print("shoot")
+
+                if event.type == constants.GOT_FRUIT_EVENT:
+                    self.playerPoint += 1
+                    self.speedUpToAllSnakes()
 
                 self.player.handleEvent(event)
 
@@ -96,28 +113,45 @@ class App:
 
         self.run()
 
+    def onSpawnMoreSnake(self):
+        # check max snake
+        snakeCount = self.getObjCountByCondition(lambda obj: obj.name == "snake")
+        if snakeCount >= constants.MAX_SNAKE_COUNT:
+            return
+
+        # add snake
+        randomPos = self.getValidRandomTilePosition()
+        snake = Snake(randomPos.x, randomPos.y)
+        self.addObject(snake)
+
     def onShootBullet(self, data: utilities.ShootBulletEventData):
-        newBullet = PowerUp(
-            data.tilePos.x,
-            data.tilePos.y,
-            SlowBulletInfo(),
-            constants.SLOW_BULLET_SPEED,
-            data.direction,
-        )
-        self.addObject(newBullet)
+        PowerUp.generateSlowBullet(self, data)
+
+    def getAllCollisionSubjects(self):
+        collisionSubjects = []
+        for obj in self.objs:
+            subjects: list = obj.getCollisionSubjects()
+            collisionSubjects += subjects
+        return collisionSubjects
 
     def update(self):
         if self.isGameOver:
             return
+
         self.powerUpUpdate()
+        self.snakeGeneratorUpdate()
 
         # update objs
         for x in self.objs:
             x.update(self)
 
         # detect and handle collision
-        for x in range(0, len(self.objs) - 1):
-            for y in range(x + 1, len(self.objs)):
+        for x in range(
+            0, len(self.objs) - 1
+        ):  # [0 -> len - 2] because range ignores the last element
+            for y in range(
+                x + 1, len(self.objs)
+            ):  # [x + 1 -> len - 1] because range ignores the last element
                 App.checkAndHandleCollision(self.objs[x], self.objs[y])
 
         # remove destroyed objs
@@ -125,24 +159,97 @@ class App:
             if x.checkIsDead():
                 self.objs.remove(x)
 
+    def speedUpToAllSnakes(self):
+        for obj in self.objs:
+            if obj.name == "snake":
+                obj.speed = constants.SNAKE_SPEED + self.playerPoint / 10
+
+    def snakeGeneratorUpdate(self):
+        self.snakeSpawnRemainingTime -= self.dt
+        if self.snakeSpawnRemainingTime <= 0:
+            self.onSpawnMoreSnake()
+            self.snakeSpawnRemainingTime = constants.SNAKE_SPAWN_DELAY_TIME
+
     def powerUpUpdate(self):
         self.remaningSpawnPowerTime -= self.dt
+
         if self.remaningSpawnPowerTime <= 0:
-            self.remaningSpawnPowerTime = 20
-            self.generateTeleportInfo()
+            powerUpCount = self.getObjCountByCondition(
+                lambda obj: obj.name == "power-up"
+            )
+            self.remaningSpawnPowerTime = constants.POWER_UP_SPAWN_DELAY_TIME
+            if powerUpCount < constants.MAX_POWER_UP_COUNT:
+                self.onGenerateRandomPower()
 
-    def generateSpeedUpInfo(self):
-        self.objs.append(PowerUp(6, 5, SpeedUpInfo()))
+    def getRandomTilePosition(self) -> Vector2:
+        randomX = random.randint(0, int(constants.GRID_SIZE.x) - 1)
+        randomY = random.randint(0, int(constants.GRID_SIZE.y) - 1)
+        return Vector2(randomX, randomY)
 
-    def generateTeleportInfo(self):
-        teleport1 = TeleportInfo()
-        teleport2 = TeleportInfo()
-        teleportPower1 = PowerUp(15, 0, teleport1)
-        teleportPower2 = PowerUp(0, 15, teleport2)
-        teleport1.linkTeleport(teleportPower2)
-        teleport2.linkTeleport(teleportPower1)
-        self.objs.append(teleportPower1)
-        self.objs.append(teleportPower2)
+    def getValidRandomTilePosition(
+        self, exclusionTiles: list = [], minExclusionDistance=20
+    ) -> Vector2:
+        randomPos = Vector2(0, 0)
+        success = False
+        tryCount = 0
+        while not success:
+            success = True
+            tryCount += 1
+            if tryCount > 100:
+                raise Exception("too many position searches")
+            randomPos = self.getRandomTilePosition()
+
+            if randomPos in exclusionTiles:
+                success = False
+                continue
+
+            for exclusionTile in exclusionTiles:
+                distanceToExclusion = (randomPos - exclusionTile).length()
+                if distanceToExclusion < minExclusionDistance:
+                    success = False
+                    break
+            if not success:
+                continue
+
+            allCollisionSubjects = self.getAllCollisionSubjects()
+            for x in allCollisionSubjects:
+                vector: Vector2 = randomPos - x.collisionComp.position
+                distance = vector.length()
+                if distance < 4:
+                    success = False
+                    break
+
+        return randomPos
+
+    def getObjCountByCondition(self, cb):
+        count = 0
+        for obj in self.objs:
+            if cb(obj):
+                count += 1
+        return count
+
+    def onGenerateRandomPower(self):
+        # teleport count
+        checkTeleportObj = lambda obj: hasattr(obj, "powerInfo") and isinstance(
+            obj.powerInfo, TeleportInfo
+        )
+        teleCount = self.getObjCountByCondition(checkTeleportObj)
+
+        # if teleCount >= 4 don't spawn more teleports
+        maxPowerUpType = 6 if teleCount < 4 else 3
+        randomInd = random.randint(0, maxPowerUpType)
+        match randomInd:
+            case 0:
+                PowerUp.generateSpeedUpPower(self)
+            case 1:
+                PowerUp.generateResizePower(self)
+            case 2:
+                PowerUp.generateFruitPower(self)
+            case 3:
+                PowerUp.generateFruitPower(self)
+            # any other number
+            case _:
+                PowerUp.generateTeleportPower(self)
 
     def draw(self):
         self.screen.fill((0, 0, 0))  # clean screen
@@ -154,9 +261,30 @@ class App:
             self.screen.blit(text_surface, (0, 0))
             return
 
+        self.drawGrid()
+
         # draw objs
         for x in self.objs:
             x.draw(self)
+
+        # draw player point
+        point_surface = my_font.render(
+            f"Point: {self.playerPoint}, Objs: {self.objs.__len__()}, Speed: {self.player.speed}",
+            False,
+            (255, 255, 0),
+        )
+        self.screen.blit(point_surface, (0, 0))
+
+    def drawGrid(self):
+        for x in range(0, constants.WINDOW_WIDTH, int(constants.TILE_SIZE.x)):
+            pygame.draw.line(
+                self.screen, constants.GRID_COLOR, (x, 0), (x, constants.WINDOW_HEIGHT)
+            )
+
+        for y in range(0, constants.WINDOW_HEIGHT, int(constants.TILE_SIZE.y)):
+            pygame.draw.line(
+                self.screen, constants.GRID_COLOR, (0, y), (constants.WINDOW_WIDTH, y)
+            )
 
 
 App().run()

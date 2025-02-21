@@ -2,18 +2,20 @@ from pygame.math import Vector2
 from collisionComp import *
 import pygame
 import constants
+import utilities
 
 
-class Player:
+class Player(utilities.GameObject):
     def __init__(self):
+        super().__init__(constants.PLAYER_SPEED, Vector2(0, 0))
         self.name = "player"
         self.collisionComp = CollisionComp(5, 5, constants.PLAYER_SIZE)
-        self.speed = constants.PLAYER_SPEED
-        self.direction = Vector2(0, 0)
         self.color = constants.PLAYER_COLOR
         self.remainingMoveTime = 0
 
     def update(self, app):
+        self.updateSpeed(app)
+
         if self.direction.length() == 0:
             return
 
@@ -48,6 +50,9 @@ class Player:
     def moveV1(self, dt):
         self.collisionComp.onSmoothMove(dt, self.speed, self.direction)
 
+    def changeSpeed(self, val):
+        self.speed = utilities.clamp(self.speed + val, 0.5, 5)
+
     def moveV2(self, dt):
         self.remainingMoveTime -= dt
         if self.remainingMoveTime > 0:
@@ -55,6 +60,9 @@ class Player:
 
         self.remainingMoveTime = 1 / self.speed
         self.collisionComp.position += self.direction
+        self.collisionComp.position = utilities.clampPosition(
+            self.collisionComp.position
+        )
 
     def draw(self, app):
         pygame.draw.circle(

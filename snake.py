@@ -1,25 +1,22 @@
 import pygame
 import constants
 import utilities
+import random
 from pygame.math import Vector2
 from collisionComp import *
 
 
-class Snake:
+class Snake(utilities.GameObject):
     def __init__(self, x, y):
+        super().__init__(constants.SNAKE_SPEED, Vector2(1, 0))
         self.name = "snake"
         self.head = SnakeHead(x, y, self)
         self.nodes: list[SnakeNode] = []
         for i in range(constants.INIT_NODE_LENGTH):
-            self.nodes.append(
-                SnakeNode(
-                    constants.START_SNAKE_X - i - 1, constants.START_SNAKE_Y, self
-                )
-            )
+            self.nodes.append(SnakeNode(x, y, self))
 
-        self.speed = constants.SNAKE_SPEED  # tiles per second
-        self.direction = Vector2(1, 0)
         self.remainingMoveTime = 0
+        self.remainingShootTime = 0
 
     def addLength(self, changeLength=1):
         for i in range(0, changeLength):
@@ -31,6 +28,9 @@ class Snake:
                     self,
                 )
             )
+
+    def changeSpeed(self, val):
+        self.speed = utilities.clamp(self.speed + val, 0.5, 5)
 
     def changeSize(self, changeSize):
         self.head.collisionComp.changeSize(changeSize)
@@ -59,11 +59,22 @@ class Snake:
             pygame.event.Event(constants.SNAKE_SHOOT_BULLET_EVENT, {"data": data})
         )
 
+    def updateShoot(self, app):
+        if (
+            app.getGameState() >= 1
+            and self.remainingShootTime <= 0
+            and random.randint(0, 120) == 0
+        ):  # 120 frames ~ every 2 seconds
+            self.shootBullet()
+            self.remainingShootTime = constants.SNAKE_SHOOT_DELAY_TIME
+
     def update(self, app):
         self.reset()
         self.trackingTarget(app.player.collisionComp.position)
-        self.remainingMoveTime -= app.dt
+        self.updateShoot(app)
+        self.updateSpeed(app)
 
+        self.remainingMoveTime -= app.dt
         if self.remainingMoveTime <= 0:
             self.remainingMoveTime = 1 / self.speed
             self.onMove()
