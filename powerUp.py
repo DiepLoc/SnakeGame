@@ -1,17 +1,19 @@
 import pygame
 import constants
 import utilities
+import random
 import abc  # abstract class module
 from pygame.math import Vector2
 from collisionComp import *
 from player import *
-from snake import *
+import snake as sn
+from textureManager import TextureName
 
 
 class PowerUp(utilities.GameObject):
     def __init__(
         self,
-        image,
+        image: TextureName,
         x,
         y,
         powerInfo,
@@ -21,7 +23,7 @@ class PowerUp(utilities.GameObject):
         lifeTime=None,
     ):
         super().__init__(speed, direction)
-        self.image = image
+        self.image: TextureName = image
         self.name = "power-up"
         self.collisionComp = CollisionComp(x, y, constants.POWER_UP_SIZE)
         self.powerInfo: PowerUpInfo = powerInfo
@@ -31,6 +33,9 @@ class PowerUp(utilities.GameObject):
     # return collisionComp containers
     def getCollisionSubjects(self):
         return [self]
+
+    def checkIsAttactSnake(self):
+        return self.powerInfo.isSnakeAttactor()
 
     def handleCollision(self, target):
         if target.name == "player":
@@ -52,7 +57,7 @@ class PowerUp(utilities.GameObject):
     def draw(self, app):
         utilities.drawImage(
             app.screen,
-            self.image,
+            app.textureManager.getTextureByName(self.image),
             self.collisionComp.size,
             self.collisionComp.getCenter(),
             self.lastDirection,
@@ -62,12 +67,19 @@ class PowerUp(utilities.GameObject):
     @staticmethod
     def generateSpeedUpPower(app):
         pos = app.getValidRandomTilePosition()
-        app.addObject(PowerUp(app.lemonImage, pos.x, pos.y, SpeedUpInfo(0.5)))
+        app.addObject(
+            PowerUp(
+                TextureName.LEMON,
+                pos.x,
+                pos.y,
+                SpeedUpInfo(constants.PLAYER_LEMON_SPEED_CHANGE),
+            )
+        )
 
     @staticmethod
     def generateResizePower(app):
         pos = app.getValidRandomTilePosition()
-        app.addObject(PowerUp(app.chocolateImage, pos.x, pos.y, ChangeSizeInfo(5)))
+        app.addObject(PowerUp(TextureName.CHOCOLATE, pos.x, pos.y, ChangeSizeInfo(5)))
 
     # @staticmethod
     # def generateAddLengthPower(app):
@@ -75,9 +87,9 @@ class PowerUp(utilities.GameObject):
     #     app.addObject(PowerUp(pos.x, pos.y, AddLengthInfo(), "green"))
 
     @staticmethod
-    def generateFruitPower(app):
+    def generateApplePower(app):
         pos = app.getValidRandomTilePosition()
-        app.addObject(PowerUp(app.appleImage, pos.x, pos.y, FruitInfo()))
+        app.addObject(PowerUp(TextureName.APPLE, pos.x, pos.y, AppleInfo()))
 
     @staticmethod
     def generateTeleportPower(app):
@@ -91,10 +103,10 @@ class PowerUp(utilities.GameObject):
             random.randint(0, 200),
         )
         teleportPower1 = PowerUp(
-            app.teleportImage, pos1.x, pos1.y, teleport1, randomColor
+            TextureName.TELEPORT, pos1.x, pos1.y, teleport1, randomColor
         )
         teleportPower2 = PowerUp(
-            app.teleportImage, pos2.x, pos2.y, teleport2, randomColor
+            TextureName.TELEPORT, pos2.x, pos2.y, teleport2, randomColor
         )
         teleport1.linkTeleport(teleportPower2)
         teleport2.linkTeleport(teleportPower1)
@@ -104,7 +116,7 @@ class PowerUp(utilities.GameObject):
     @staticmethod
     def generateSlowBullet(app, data: utilities.ShootBulletEventData):
         newBullet = PowerUp(
-            app.slowBulletImage,
+            TextureName.SLOW_BULLET,
             data.tilePos.x,
             data.tilePos.y,
             SlowBulletInfo(),
@@ -118,11 +130,18 @@ class PowerUp(utilities.GameObject):
 
 class PowerUpInfo(abc.ABC):
     @abc.abstractmethod
-    def onPlayerApply(self, subject, target: Player):
+    # return True -> power up consumed, False -> power up ignored
+    def onPlayerApply(self, subject, target: Player) -> bool:
         pass
 
     @abc.abstractmethod
-    def onSnakeApply(self, subject, target: Snake):
+    # return True -> power up consumed, False -> power up ignored
+    def onSnakeApply(self, subject, target: sn.Snake) -> bool:
+        pass
+
+    @abc.abstractmethod
+    # return True -> attract snake AI
+    def isSnakeAttactor(self) -> bool:
         pass
 
 
@@ -132,23 +151,15 @@ class ChangeSizeInfo(PowerUpInfo):
 
     def onPlayerApply(self, subject, target: Player):
         target.collisionComp.changeSize(-self.changeSizeVal)  # downsize for player
+        pygame.event.post(pygame.event.Event(constants.PLAYER_GET_CHOCOLATE_EVENT))
         return True
 
-    def onSnakeApply(self, subject, target: Snake):
+    def onSnakeApply(self, subject, target: sn.Snake):
         target.changeSize(self.changeSizeVal)  # upsize for snake
         return True
 
-
-# class AddLengthInfo(PowerUpInfo):
-#     def __init__(self):
-#         pass
-
-#     def onPlayerApply(self, subject, target: Player):
-#         return True
-
-#     def onSnakeApply(self, subject, target: Snake):
-#         target.addLength(1)
-#         return True
+    def isSnakeAttactor(self) -> bool:
+        return True
 
 
 class SlowBulletInfo(PowerUpInfo):
@@ -156,10 +167,14 @@ class SlowBulletInfo(PowerUpInfo):
         pass
 
     def onPlayerApply(self, subject, target: Player):
-        target.changeSpeed(-0.3)
+        target.changeSpeed(constants.HIT_SLOW_BULLET_SPEED_REDUCTION)
+        pygame.event.post(pygame.event.Event(constants.PLAYER_HIT_SLOW_BULLET_EVENT))
         return True
 
-    def onSnakeApply(self, subject, target: Snake):
+    def onSnakeApply(self, subject, target: sn.Snake):
+        return False
+
+    def isSnakeAttactor(self) -> bool:
         return False
 
 
@@ -175,22 +190,29 @@ class TeleportInfo(PowerUpInfo):
     def onPlayerApply(self, subject, target: Player):
         target.collisionComp.position = self.telePosition
         self.linkedPower.collisionComp.isDead = True
+        pygame.event.post(pygame.event.Event(constants.PLAYER_GET_TELEPORT_EVENT))
         return True
 
-    def onSnakeApply(self, subject, target: Snake):
+    def onSnakeApply(self, subject, target: sn.Snake):
+        return False
+
+    def isSnakeAttactor(self) -> bool:
         return False
 
 
-class FruitInfo(PowerUpInfo):
+class AppleInfo(PowerUpInfo):
     def __init__(self):
         pass
 
     def onPlayerApply(self, subject, target: Player):
-        pygame.event.post(pygame.event.Event(constants.GOT_FRUIT_EVENT))
+        pygame.event.post(pygame.event.Event(constants.PLAYER_GET_APPLE_EVENT))
         return True
 
-    def onSnakeApply(self, subject, target: Snake):
+    def onSnakeApply(self, subject, target: sn.Snake):
         target.addLength(1)
+        return True
+
+    def isSnakeAttactor(self) -> bool:
         return True
 
 
@@ -200,8 +222,12 @@ class SpeedUpInfo(PowerUpInfo):
 
     def onPlayerApply(self, subject, target: Player):
         target.changeSpeed(self.speedUp)
+        pygame.event.post(pygame.event.Event(constants.PLAYER_GET_LEMON_EVENT))
         return True
 
-    def onSnakeApply(self, subject, target: Snake):
-        target.changeSpeed(self.speedUp)
+    def onSnakeApply(self, subject, target: sn.Snake):
+        target.changeSpeed(self.speedUp / 4)
+        return True
+
+    def isSnakeAttactor(self) -> bool:
         return True

@@ -1,16 +1,21 @@
 # Import and initialize the pygame library
 import pygame
+from pygame import Vector2
 import random
 import os
 import constants
 import utilities
-from snake import *
-from player import *
-from powerUp import *
+from player import Player
+import snake
+import textureManager
+import soundManager
+from powerUp import PowerUp, TeleportInfo
 
 pygame.init()
-pygame.font.init()  # you have to call this at the start,
-# if you want to use this module.
+# you have to call this at the start, if you want to use this module.
+pygame.font.init()
+# you have to call this at the start, if you want to use this module.
+pygame.mixer.init()
 my_font = pygame.font.SysFont("Comic Sans MS", 30)
 
 
@@ -23,28 +28,22 @@ class App:
         self.clock = pygame.time.Clock()
         self.objs = []
         self.player = None  # for Player reference
-        self.remaningSpawnPowerTime = 3
+        self.remaningSpawnPowerTime = constants.POWER_UP_SPAWN_DELAY_TIME
         self.events = []
         self.isGameOver = False
         self.pressed_keys = []
         self.pressed_mouses = []
         self.playerPoint = 0
         self.snakeSpawnRemainingTime = constants.SNAKE_SPAWN_DELAY_TIME
-        self.loadImages()
+        self.highlightBgRemainingTime = 0
 
-    def loadAndGetImageByFileName(self, fileName):
-        return pygame.image.load(os.path.join("images", fileName)).convert_alpha()
+        # init managers
+        self.textureManager = textureManager.TextureManager()
+        self.soundManager = soundManager.SoundManager()
 
-    def loadImages(self):
-        # images
-        self.playerImage = self.loadAndGetImageByFileName("snake-mouse.png")
-        self.snakeHeadImage = self.loadAndGetImageByFileName("snake-snake-head.png")
-        self.snakeNodeImage = self.loadAndGetImageByFileName("snake-snake-node.png")
-        self.slowBulletImage = self.loadAndGetImageByFileName("snake-slow-bullet.png")
-        self.teleportImage = self.loadAndGetImageByFileName("snake-teleport.png")
-        self.lemonImage = self.loadAndGetImageByFileName("snake-lemon.png")
-        self.appleImage = self.loadAndGetImageByFileName("snake-apple.png")
-        self.chocolateImage = self.loadAndGetImageByFileName("snake-chocolate.png")
+        # init observers
+        self.observers: list[utilities.Observer] = []
+        self.observers.append(self.soundManager)
 
     def getGameState(self) -> int:
         if self.playerPoint < 10:
@@ -56,14 +55,15 @@ class App:
     # run per new game
     def reset(self):
         self.objs = []
-        snake = Snake(constants.START_SNAKE_X, constants.START_SNAKE_Y)
+        newSnake = snake.Snake(constants.START_SNAKE_X, constants.START_SNAKE_Y)
         player = Player()
         self.player = player
         self.objs.append(player)
-        self.objs.append(snake)
+        self.objs.append(newSnake)
         self.isGameOver = False
         self.playerPoint = 0
         self.snakeSpawnRemainingTime = constants.SNAKE_SPAWN_DELAY_TIME
+        self.highlightBgRemainingTime = 0
 
     @staticmethod
     def checkAndHandleCollision(a, b):
@@ -84,37 +84,46 @@ class App:
     def addObject(self, obj):
         self.objs.append(obj)
 
+    def handleEvents(self):
+        for event in self.events:
+            if event.type == pygame.QUIT:
+                self.running = False
+                pygame.quit()
+
+            if event.type == constants.PLAYER_DEAD_EVENT:
+                self.isGameOver = True
+
+            if (
+                event.type == pygame.KEYDOWN
+                and event.key == pygame.K_SPACE
+                and self.isGameOver
+            ):
+                self.running = False
+
+            if event.type == constants.SNAKE_SHOOT_BULLET_EVENT:
+                self.onShootBullet(event.data)
+
+            if event.type == constants.PLAYER_GET_APPLE_EVENT:
+                self.playerPoint += 1
+                self.highlightBgRemainingTime = constants.HIGHLIGHT_BG_TIME
+
+            self.player.handleInputByEvent(event)
+            self.notifyObservers(event)
+
+    # notify event to all observers
+    def notifyObservers(self, event):
+        for observer in self.observers:
+            observer.onNotify(event)
+
     def run(self):
         self.reset()
-        running = True
-        while running:
-            # Did the user click the window close button?
+        self.running = True
+        while self.running:
+            # get events and handle
             self.events = pygame.event.get()
-            for event in self.events:
-                if event.type == pygame.QUIT:
-                    running = False
-                    pygame.quit()
+            self.handleEvents()
 
-                if event.type == constants.PLAYER_DEAD_EVENT:
-                    self.isGameOver = True
-
-                if (
-                    event.type == pygame.KEYDOWN
-                    and event.key == pygame.K_SPACE
-                    and self.isGameOver
-                ):
-                    running = False
-
-                if event.type == constants.SNAKE_SHOOT_BULLET_EVENT:
-                    self.onShootBullet(event.data)
-                    print("shoot")
-
-                if event.type == constants.GOT_FRUIT_EVENT:
-                    self.playerPoint += 1
-                    # self.speedUpToAllSnakes()
-
-                self.player.handleEvent(event)
-
+            # save input states
             self.pressed_keys = pygame.key.get_pressed()
             self.pressed_mouses = pygame.mouse.get_pressed()
 
@@ -137,8 +146,8 @@ class App:
 
         # add snake
         randomPos = self.getValidRandomTilePosition()
-        snake = Snake(randomPos.x, randomPos.y)
-        self.addObject(snake)
+        newSnake = snake.Snake(randomPos.x, randomPos.y)
+        self.addObject(newSnake)
 
     def onShootBullet(self, data: utilities.ShootBulletEventData):
         PowerUp.generateSlowBullet(self, data)
@@ -151,6 +160,9 @@ class App:
         return collisionSubjects
 
     def update(self):
+        if self.highlightBgRemainingTime > 0:
+            self.highlightBgRemainingTime -= self.dt
+
         if self.isGameOver:
             return
 
@@ -193,7 +205,9 @@ class App:
             powerUpCount = self.getObjCountByCondition(
                 lambda obj: obj.name == "power-up"
             )
-            self.remaningSpawnPowerTime = constants.POWER_UP_SPAWN_DELAY_TIME
+            self.remaningSpawnPowerTime = (
+                constants.POWER_UP_SPAWN_DELAY_TIME - self.playerPoint / 10
+            )
             if powerUpCount < constants.MAX_POWER_UP_COUNT:
                 self.onGenerateRandomPower()
 
@@ -213,7 +227,7 @@ class App:
         while not success:
             success = True
             tryCount += 1
-            if tryCount > 100:
+            if tryCount > 10000:
                 raise Exception("too many position searches")
             randomPos = self.getRandomTilePosition()
 
@@ -239,6 +253,13 @@ class App:
 
         return randomPos
 
+    def getObjByCondition(self, cb):
+        objs = []
+        for obj in self.objs:
+            if cb(obj):
+                objs.append(obj)
+        return objs
+
     def getObjCountByCondition(self, cb):
         count = 0
         for obj in self.objs:
@@ -254,7 +275,7 @@ class App:
         teleCount = self.getObjCountByCondition(checkTeleportObj)
 
         # if teleCount >= 4 don't spawn more teleports
-        maxPowerUpType = 6 if teleCount < 4 else 3
+        maxPowerUpType = 5 if teleCount < 4 else 3
         randomInd = random.randint(0, maxPowerUpType)
         match randomInd:
             case 0:
@@ -262,20 +283,25 @@ class App:
             case 1:
                 PowerUp.generateResizePower(self)
             case 2:
-                PowerUp.generateFruitPower(self)
+                PowerUp.generateApplePower(self)
             case 3:
-                PowerUp.generateFruitPower(self)
-            # any other number
+                PowerUp.generateApplePower(self)
+            # any other number -> spawn teleport
             case _:
                 PowerUp.generateTeleportPower(self)
 
     def draw(self):
-        self.screen.fill(constants.BACKGROUND_COLOR)  # clean screen
+        highlightBgRatio = self.highlightBgRemainingTime / constants.HIGHLIGHT_BG_TIME
+        bgColor = utilities.lerpColors(
+            constants.BACKGROUND_COLOR, constants.HIGHLIGHT_BG_COLOR, highlightBgRatio
+        )
+        self.screen.fill(bgColor)  # clean screen
+
         # game over
         if self.isGameOver:
-            text_surface = my_font.render(
-                "You Lose! Hit 'SPACE' to play new game", False, (255, 255, 0)
-            )
+            self.screen.fill("black")
+            txt = f"{self.playerPoint} POINT{"s" if self.playerPoint > 1 else ""} and You Lost! Hit 'SPACE' to play new game"
+            text_surface = my_font.render(txt, False, "yellow")
             self.screen.blit(text_surface, (0, 0))
             return
 
@@ -286,11 +312,12 @@ class App:
             x.draw(self)
 
         # draw player point
-        point_surface = my_font.render(
-            f"Point: {self.playerPoint}, Objs: {self.objs.__len__()}, Speed: {self.player.speed}, dir: {utilities.getAngleBy4DVector(self.player.lastDirection)}",
-            False,
-            (255, 255, 0),
+        playerSpeedTxt = "{:.2f}".format(self.player.speed)
+        playerSizeTxt = self.player.collisionComp.size
+        txt = (
+            f"Point: {self.playerPoint}, Speed: {playerSpeedTxt}, Size: {playerSizeTxt}"
         )
+        point_surface = my_font.render(txt, False, "black")
         self.screen.blit(point_surface, (0, 0))
 
     def drawGrid(self):

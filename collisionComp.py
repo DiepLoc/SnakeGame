@@ -1,4 +1,4 @@
-import pygame
+from __future__ import annotations
 import constants
 import utilities
 from pygame.math import Vector2
@@ -22,6 +22,10 @@ class CollisionComp:
         if direction.length() != 0:
             self.position += dt * speed * direction.normalize()
             self.position = utilities.clampPosition(self.position)
+
+    def getDistance(self, other: CollisionComp):
+        vec = self.position - other.position
+        return vec.length()
 
     def checkCollision(self, other):
         selfCenter = self.getCenter()

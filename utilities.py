@@ -2,6 +2,7 @@ from pygame.math import Vector2
 import abc
 import constants
 import pygame
+import utilities
 
 
 def clamp(val, min, max):
@@ -67,12 +68,16 @@ def tint_image(image, tint_color):
     return tinted
 
 
-def recolor_image(image, new_color):
-    """Completely recolors an image while keeping transparency."""
-    colored = pygame.Surface(image.get_size(), pygame.SRCALPHA)  # Transparent surface
-    colored.fill(new_color)  # Fill with new color
-    image.blit(colored, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)  # Apply color
-    return image
+def lerpColors(start, end, ratio):
+    if ratio == 0:
+        return start
+    if ratio == 1:
+        return end
+
+    dR = end[0] - start[0]
+    dG = end[1] - start[1]
+    dB = end[2] - start[2]
+    return (start[0] + dR * ratio, start[1] + dG * ratio, start[2] + dB * ratio)
 
 
 class ShootBulletEventData:
@@ -104,6 +109,11 @@ class GameObject(abc.ABC):
         # Adjust speed to base speed each frame
         self.speed -= dSpeed / 400
 
+    def changeSpeed(self, val):
+        self.speed = utilities.clamp(
+            self.speed + val, constants.MIN_SPEED_OBJ, constants.MAX_SPEED_OBJ
+        )
+
     @abc.abstractmethod
     def checkIsDead(self):
         pass
@@ -114,4 +124,11 @@ class GameObject(abc.ABC):
 
     @abc.abstractmethod
     def handleCollision(self, target):
+        pass
+
+
+# listen events
+class Observer(abc.ABC):
+    @abc.abstractmethod
+    def onNotify(self, event):
         pass

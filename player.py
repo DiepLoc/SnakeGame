@@ -3,11 +3,15 @@ from collisionComp import *
 import pygame
 import constants
 import utilities
+import textureManager
 
 
 class Player(utilities.GameObject):
     def __init__(self):
-        super().__init__(constants.PLAYER_SPEED, Vector2(0, 0))
+        super().__init__(
+            constants.PLAYER_SPEED,
+            Vector2(constants.START_PLAYER_X, constants.START_PLAYER_Y),
+        )
         self.name = "player"
         self.collisionComp = CollisionComp(5, 5, constants.PLAYER_SIZE)
         self.color = constants.PLAYER_COLOR
@@ -34,7 +38,7 @@ class Player(utilities.GameObject):
     def handleCollision(self, target):
         pass
 
-    def handleEvent(self, event):
+    def handleInputByEvent(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_p:  # for debugging
                 a = 1
@@ -49,9 +53,6 @@ class Player(utilities.GameObject):
 
     def moveV1(self, dt):
         self.collisionComp.onSmoothMove(dt, self.speed, self.direction)
-
-    def changeSpeed(self, val):
-        self.speed = utilities.clamp(self.speed + val, 0.5, 5)
 
     def moveV2(self, dt):
         self.remainingMoveTime -= dt
@@ -73,7 +74,7 @@ class Player(utilities.GameObject):
         # )
         utilities.drawImage(
             app.screen,
-            app.playerImage,
+            app.textureManager.getTextureByName(textureManager.TextureName.MOUSE),
             self.collisionComp.size,
             self.collisionComp.getCenter(),
             self.lastDirection,

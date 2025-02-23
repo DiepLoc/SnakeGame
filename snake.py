@@ -4,6 +4,7 @@ import utilities
 import random
 from pygame.math import Vector2
 from collisionComp import *
+import textureManager
 
 
 class Snake(utilities.GameObject):
@@ -18,6 +19,8 @@ class Snake(utilities.GameObject):
         self.remainingMoveTime = 0
         self.remainingShootTime = 0
 
+        self.trackingPower = None
+
     def addLength(self, changeLength=1):
         for i in range(0, changeLength):
             currentLastNode = self.nodes[self.nodes.__len__() - 1]
@@ -28,9 +31,6 @@ class Snake(utilities.GameObject):
                     self,
                 )
             )
-
-    def changeSpeed(self, val):
-        self.speed = utilities.clamp(self.speed + val, 0.5, 5)
 
     def changeSize(self, changeSize):
         self.head.collisionComp.changeSize(changeSize)
@@ -71,7 +71,7 @@ class Snake(utilities.GameObject):
 
     def update(self, app):
         self.reset()
-        self.trackingTarget(app.player.collisionComp.position)
+        self.updateTracking(app)
         self.updateShoot(app)
         self.updateSpeedAndLastDirection(app)
 
@@ -88,12 +88,52 @@ class Snake(utilities.GameObject):
 
             pygame.event.post(pygame.event.Event(constants.PLAYER_DEAD_EVENT))
 
-    def trackingTarget(self, target: Vector2):
-        if (self.head.collisionComp.position - target).length() == 0:
+    def updateTracking(self, app):
+        if (
+            self.trackingPower == None
+            and random.randint(0, int(constants.SNAKE_FIND_FRUIT_RANDOM_TIME * 60)) == 0
+        ):
+            self.trackingPower = self.tryGetTrackingFruit(app)
+
+        if self.trackingPower != None and self.trackingPower.checkIsDead():
+            self.trackingPower = None
+
+        collisionCompTarget = (
+            app.player.collisionComp
+            if self.trackingPower == None
+            else self.trackingPower.collisionComp
+        )
+        self.trackingTarget(collisionCompTarget)
+
+    def tryGetTrackingFruit(self, app) -> utilities.GameObject:
+        import powerUp
+
+        isAttactSnakeFruit = (
+            lambda obj: obj.name == "power-up" and obj.checkIsAttactSnake()
+        )
+        fruits: list[powerUp.PowerUp] = app.getObjByCondition(isAttactSnakeFruit)
+
+        minDistance = app.player.collisionComp.getDistance(self.head.collisionComp)
+        trackingFruit = None
+
+        for fruit in fruits:
+            distance = fruit.collisionComp.getDistance(self.head.collisionComp)
+            if (
+                distance < minDistance
+                and distance <= constants.MAX_SNAKE_TRACKING_FRUIT_DISTANCE
+            ):
+                trackingFruit = fruit
+                minDistance = distance
+
+        return trackingFruit
+
+    def trackingTarget(self, collisionCompTarget: CollisionComp):
+        targetPos = collisionCompTarget.position
+        if (self.head.collisionComp.position - targetPos).length() == 0:
             return
 
-        dx = target.x - self.head.collisionComp.position.x
-        dy = target.y - self.head.collisionComp.position.y
+        dx = targetPos.x - self.head.collisionComp.position.x
+        dy = targetPos.y - self.head.collisionComp.position.y
 
         if abs(dx) > abs(dy):
             if dx > 0:
@@ -136,7 +176,7 @@ class SnakeNode:
     def draw(self, app):
         utilities.drawImage(
             app.screen,
-            app.snakeNodeImage,
+            app.textureManager.getTextureByName(textureManager.TextureName.SNAKE_NODE),
             self.collisionComp.size,
             self.collisionComp.getCenter(),
             self.snake.lastDirection,
@@ -154,7 +194,7 @@ class SnakeHead(SnakeNode):
     def draw(self, app):
         utilities.drawImage(
             app.screen,
-            app.snakeHeadImage,
+            app.textureManager.getTextureByName(textureManager.TextureName.SNAKE_HEAD),
             self.collisionComp.size,
             self.collisionComp.getCenter(),
             self.snake.lastDirection,
