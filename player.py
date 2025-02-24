@@ -10,10 +10,12 @@ class Player(utilities.GameObject):
     def __init__(self):
         super().__init__(
             constants.PLAYER_SPEED,
-            Vector2(constants.START_PLAYER_X, constants.START_PLAYER_Y),
+            Vector2(-1, 0),
         )
         self.name = "player"
-        self.collisionComp = CollisionComp(5, 5, constants.PLAYER_SIZE)
+        self.collisionComp = CollisionComp(
+            constants.START_PLAYER_X, constants.START_PLAYER_Y, constants.PLAYER_SIZE
+        )
         self.color = constants.PLAYER_COLOR
         self.remainingMoveTime = 0
 

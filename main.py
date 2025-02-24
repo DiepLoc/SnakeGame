@@ -105,6 +105,7 @@ class App:
 
             if event.type == constants.PLAYER_GET_APPLE_EVENT:
                 self.playerPoint += 1
+                self.upgradeToAllSnakes()
                 self.highlightBgRemainingTime = constants.HIGHLIGHT_BG_TIME
 
             self.player.handleInputByEvent(event)
@@ -187,10 +188,11 @@ class App:
             if x.checkIsDead():
                 self.objs.remove(x)
 
-    def speedUpToAllSnakes(self):
+    def upgradeToAllSnakes(self):
         for obj in self.objs:
             if obj.name == "snake":
-                obj.speed = constants.SNAKE_SPEED + self.playerPoint / 10
+                obj.addLength()
+                # obj.speed = constants.SNAKE_SPEED + self.playerPoint / 10
 
     def snakeGeneratorUpdate(self):
         self.snakeSpawnRemainingTime -= self.dt
@@ -205,9 +207,12 @@ class App:
             powerUpCount = self.getObjCountByCondition(
                 lambda obj: obj.name == "power-up"
             )
-            self.remaningSpawnPowerTime = (
-                constants.POWER_UP_SPAWN_DELAY_TIME - self.playerPoint / 10
+            nextPowerUpSpawnTime = max(
+                constants.MIN_POWER_UP_SPAWN_DELAY_TIME,
+                constants.POWER_UP_SPAWN_DELAY_TIME - self.playerPoint / 30,
             )
+            self.remaningSpawnPowerTime = nextPowerUpSpawnTime
+
             if powerUpCount < constants.MAX_POWER_UP_COUNT:
                 self.onGenerateRandomPower()
 
@@ -286,7 +291,7 @@ class App:
                 PowerUp.generateApplePower(self)
             case 3:
                 PowerUp.generateApplePower(self)
-            # any other number -> spawn teleport
+            # any other number -> spawn teleports
             case _:
                 PowerUp.generateTeleportPower(self)
 
@@ -297,19 +302,17 @@ class App:
         )
         self.screen.fill(bgColor)  # clean screen
 
+        self.drawGrid()
+        # draw objs
+        for x in self.objs:
+            x.draw(self)
+
         # game over
         if self.isGameOver:
-            self.screen.fill("black")
             txt = f"{self.playerPoint} POINT{"s" if self.playerPoint > 1 else ""} and You Lost! Hit 'SPACE' to play new game"
             text_surface = my_font.render(txt, False, "yellow")
             self.screen.blit(text_surface, (0, 0))
             return
-
-        self.drawGrid()
-
-        # draw objs
-        for x in self.objs:
-            x.draw(self)
 
         # draw player point
         playerSpeedTxt = "{:.2f}".format(self.player.speed)

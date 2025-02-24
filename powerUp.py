@@ -209,7 +209,7 @@ class AppleInfo(PowerUpInfo):
         return True
 
     def onSnakeApply(self, subject, target: sn.Snake):
-        target.addLength(1)
+        target.addLength(2)
         return True
 
     def isSnakeAttactor(self) -> bool:

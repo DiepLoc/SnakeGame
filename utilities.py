@@ -1,5 +1,6 @@
 from pygame.math import Vector2
 import abc
+import random
 import constants
 import pygame
 import utilities
@@ -21,7 +22,6 @@ def clampPosition(position) -> Vector2:
     return Vector2(newX, newY)
 
 
-direction_to_angle = {"right": 0, "down": 90, "left": 180, "up": 270}
 direction_map = {
     (1, 0): 0,
     (-1, 0): 180,
@@ -31,16 +31,7 @@ direction_map = {
 
 
 def getAngleBy4DVector(vec: Vector2) -> int:
-    match tuple(vec):
-        case (1, 0):
-            return 0
-        case (-1, 0):
-            return 180
-        case (0, 1):
-            return 90
-        case (0, -1):
-            return 270
-    raise Exception("invalid vector")
+    return direction_map[tuple(vec)]
 
 
 def drawImage(
