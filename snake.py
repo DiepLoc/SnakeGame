@@ -18,7 +18,6 @@ class Snake(utilities.GameObject):
 
         self.remainingMoveTime = 0
         self.remainingShootTime = 0
-
         self.trackingPower = None
 
     def addLength(self, changeLength=1):

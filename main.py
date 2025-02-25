@@ -9,7 +9,7 @@ from player import Player
 import snake
 import textureManager
 import soundManager
-from powerUp import PowerUp, TeleportInfo
+from powerUp import PowerUp, TeleportInfo, PoisonInfo
 
 pygame.init()
 # you have to call this at the start, if you want to use this module.
@@ -192,7 +192,9 @@ class App:
         for obj in self.objs:
             if obj.name == "snake":
                 obj.addLength()
-                # obj.speed = constants.SNAKE_SPEED + self.playerPoint / 10
+                obj.updateBaseSpeed(
+                    constants.SNAKE_SPEED + self.playerPoint / (self.playerPoint + 10)
+                )
 
     def snakeGeneratorUpdate(self):
         self.snakeSpawnRemainingTime -= self.dt
@@ -214,7 +216,27 @@ class App:
             self.remaningSpawnPowerTime = nextPowerUpSpawnTime
 
             if powerUpCount < constants.MAX_POWER_UP_COUNT:
-                self.onGenerateRandomPower()
+                if self.checkShouldGeneratePoison():
+                    self.onGeneratePoision()
+                else:
+                    self.onGenerateRandomPower()
+
+    def checkShouldGeneratePoison(self):
+        if self.getGameState() == 0:
+            return False
+
+        checkPoisonObj = lambda obj: hasattr(obj, "powerInfo") and isinstance(
+            obj.powerInfo, PoisonInfo
+        )
+        currentPoisonCount = self.getObjCountByCondition(checkPoisonObj)
+
+        if currentPoisonCount >= 4:
+            return False
+
+        return random.randint(0, 3) == 0
+
+    def onGeneratePoision(self):
+        PowerUp.generatePoisonPower(self)
 
     def getRandomTilePosition(self) -> Vector2:
         randomX = random.randint(0, int(constants.GRID_SIZE.x) - 1)
@@ -291,7 +313,7 @@ class App:
                 PowerUp.generateApplePower(self)
             case 3:
                 PowerUp.generateApplePower(self)
-            # any other number -> spawn teleports
+            # > 3 -> spawn teleports
             case _:
                 PowerUp.generateTeleportPower(self)
 
@@ -310,16 +332,14 @@ class App:
         # game over
         if self.isGameOver:
             txt = f"{self.playerPoint} POINT{"s" if self.playerPoint > 1 else ""} and You Lost! Hit 'SPACE' to play new game"
-            text_surface = my_font.render(txt, False, "yellow")
+            text_surface = my_font.render(txt, False, "red")
             self.screen.blit(text_surface, (0, 0))
             return
 
         # draw player point
-        playerSpeedTxt = "{:.2f}".format(self.player.speed)
-        playerSizeTxt = self.player.collisionComp.size
-        txt = (
-            f"Point: {self.playerPoint}, Speed: {playerSpeedTxt}, Size: {playerSizeTxt}"
-        )
+        playerSpeed = "{:.2f}".format(self.player.speed)
+        playerSize = self.player.collisionComp.size
+        txt = f"Points: {self.playerPoint}, Speed: {playerSpeed}, Size: {playerSize}"
         point_surface = my_font.render(txt, False, "black")
         self.screen.blit(point_surface, (0, 0))
 

@@ -105,6 +105,9 @@ class GameObject(abc.ABC):
             self.speed + val, constants.MIN_SPEED_OBJ, constants.MAX_SPEED_OBJ
         )
 
+    def updateBaseSpeed(self, newVal):
+        self.baseSpeed = newVal
+
     @abc.abstractmethod
     def checkIsDead(self):
         pass

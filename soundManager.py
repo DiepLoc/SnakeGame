@@ -30,7 +30,6 @@ class SoundManager(utilities.Observer):
         return self.soundDict[name]
 
     def onNotify(self, event: pygame.event.Event):
-        return
         if event.type == constants.PLAYER_GET_APPLE_EVENT:
             self.__getSoundByName(SoundName.PICK_UP_POINT).play()
         elif (

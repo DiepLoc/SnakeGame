@@ -79,17 +79,24 @@ class PowerUp(utilities.GameObject):
     @staticmethod
     def generateResizePower(app):
         pos = app.getValidRandomTilePosition()
-        app.addObject(PowerUp(TextureName.CHOCOLATE, pos.x, pos.y, ChangeSizeInfo(5)))
-
-    # @staticmethod
-    # def generateAddLengthPower(app):
-    #     pos = app.getValidRandomTilePosition()
-    #     app.addObject(PowerUp(pos.x, pos.y, AddLengthInfo(), "green"))
+        app.addObject(
+            PowerUp(
+                TextureName.CHOCOLATE,
+                pos.x,
+                pos.y,
+                ChangeSizeInfo(constants.CHANGE_SIZE_CHOCOLATE),
+            )
+        )
 
     @staticmethod
     def generateApplePower(app):
         pos = app.getValidRandomTilePosition()
         app.addObject(PowerUp(TextureName.APPLE, pos.x, pos.y, AppleInfo()))
+
+    @staticmethod
+    def generatePoisonPower(app):
+        pos = app.getValidRandomTilePosition()
+        app.addObject(PowerUp(TextureName.POISON, pos.x, pos.y, PoisonInfo()))
 
     @staticmethod
     def generateTeleportPower(app):
@@ -143,6 +150,18 @@ class PowerUpInfo(abc.ABC):
     # return True -> attract snake AI
     def isSnakeAttactor(self) -> bool:
         pass
+
+
+class PoisonInfo(PowerUpInfo):
+    def onPlayerApply(self, subject, target: Player):
+        pygame.event.post(pygame.event.Event(constants.PLAYER_DEAD_EVENT))
+        return True
+
+    def onSnakeApply(self, subject, target: sn.Snake):
+        return False
+
+    def isSnakeAttactor(self) -> bool:
+        return False
 
 
 class ChangeSizeInfo(PowerUpInfo):

@@ -10,7 +10,7 @@ class Player(utilities.GameObject):
     def __init__(self):
         super().__init__(
             constants.PLAYER_SPEED,
-            Vector2(-1, 0),
+            Vector2(0, 1),
         )
         self.name = "player"
         self.collisionComp = CollisionComp(

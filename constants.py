@@ -2,7 +2,6 @@ import pygame
 import os
 from pygame.math import Vector2
 
-GAME_SPEED_MUL = 1.5  # change both snake and player speed by Mul
 GRID_SIZE = Vector2(30, 20)
 TILE_SIZE = Vector2(32, 32)
 WINDOW_WIDTH = int(GRID_SIZE.x * TILE_SIZE.x)
@@ -14,7 +13,7 @@ GAME_SPEED_SCALE = 1  # Increase overall game speed (inc delta time per frame)
 
 # init
 INIT_NODE_LENGTH = 5
-START_SNAKE_X = 10
+START_SNAKE_X = 12
 START_SNAKE_Y = 10
 SNAKE_SPEED = 6  # tiles per second
 SLOW_BULLET_SPEED = 10
@@ -36,18 +35,18 @@ SNAKE_SHOOT_DELAY_TIME = 2
 HIGHLIGHT_BG_TIME = 1  # s
 POWER_UP_SPAWN_DELAY_TIME = 3
 MIN_POWER_UP_SPAWN_DELAY_TIME = 1.5
-SNAKE_SPAWN_DELAY_TIME = 60
+SNAKE_SPAWN_DELAY_TIME = 5
 SNAKE_FIND_FRUIT_RANDOM_TIME = 1
 
 # size
 PLAYER_SIZE = TILE_SIZE.x * 2
 POWER_UP_SIZE = TILE_SIZE.x * 1.5
 SNAKE_SIZE = TILE_SIZE.x * 1.5
+CHANGE_SIZE_CHOCOLATE = 16
 
 # others
-HIT_SLOW_BULLET_SPEED_REDUCTION = (
-    -0.5
-)  # player speed reduction when hit by slow bullets
+# player speed reduction when hit by slow bullets
+HIT_SLOW_BULLET_SPEED_REDUCTION = -1
 PLAYER_MOVE_TYPE = 1  # 1: smooth / 2: step by step (snake-like)
 MAX_POWER_UP_COUNT = 10
 
