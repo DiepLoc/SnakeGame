@@ -324,7 +324,6 @@ class App:
         )
         self.screen.fill(bgColor)  # clean screen
 
-        self.drawGrid()
         # draw objs
         for x in self.objs:
             x.draw(self)
@@ -342,17 +341,6 @@ class App:
         txt = f"Points: {self.playerPoint}, Speed: {playerSpeed}, Size: {playerSize}"
         point_surface = my_font.render(txt, False, "black")
         self.screen.blit(point_surface, (0, 0))
-
-    def drawGrid(self):
-        for x in range(0, constants.WINDOW_WIDTH, int(constants.TILE_SIZE.x)):
-            pygame.draw.line(
-                self.screen, constants.GRID_COLOR, (x, 0), (x, constants.WINDOW_HEIGHT)
-            )
-
-        for y in range(0, constants.WINDOW_HEIGHT, int(constants.TILE_SIZE.y)):
-            pygame.draw.line(
-                self.screen, constants.GRID_COLOR, (0, y), (constants.WINDOW_WIDTH, y)
-            )
 
 
 App().run()
