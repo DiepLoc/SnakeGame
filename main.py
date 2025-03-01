@@ -325,13 +325,15 @@ class App:
             constants.WINDOW_RECT.size,
         )
         highlightBgRatio = self.highlightBgRemainingTime / constants.HIGHLIGHT_BG_TIME
-        bgColor = utilities.lerpColors(
-            constants.BACKGROUND_COLOR, constants.HIGHLIGHT_BG_COLOR, highlightBgRatio
+        highlightBg = utilities.lerpColors(
+            constants.OUT_HIGHLIGHT_BACKGROUND_COLOR,
+            constants.IN_HIGHLIGHT_BG_COLOR,
+            highlightBgRatio,
         )
 
         # Create a transparent surface
         transparent_bg = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
-        transparent_bg.fill(bgColor)  # Red with 20 alpha
+        transparent_bg.fill(highlightBg)  # Red with 20 alpha
 
         # Blit the transparent surface onto the main screen
         self.screen.blit(transparent_bg, (0, 0))
