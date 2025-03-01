@@ -324,6 +324,11 @@ class App:
             self.textureManager.getTextureByName(self.bgImage),
             constants.WINDOW_RECT.size,
         )
+
+        if self.highlightBgRemainingTime <= 0:
+            return
+
+        # display red flashing screen when player gets score
         highlightBgRatio = self.highlightBgRemainingTime / constants.HIGHLIGHT_BG_TIME
         highlightBg = utilities.lerpColors(
             constants.OUT_HIGHLIGHT_BACKGROUND_COLOR,
