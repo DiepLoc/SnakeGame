@@ -36,6 +36,7 @@ class App:
         self.playerPoint = 0
         self.snakeSpawnRemainingTime = constants.SNAKE_SPAWN_DELAY_TIME
         self.highlightBgRemainingTime = 0
+        self.bgImage = textureManager.TextureName.GRASS
 
         # init managers
         self.textureManager = textureManager.TextureManager()
@@ -125,8 +126,8 @@ class App:
             self.handleEvents()
 
             # save input states
-            self.pressed_keys = pygame.key.get_pressed()
-            self.pressed_mouses = pygame.mouse.get_pressed()
+            # self.pressed_keys = pygame.key.get_pressed()
+            # self.pressed_mouses = pygame.mouse.get_pressed()
 
             ## Update
             self.update()
@@ -317,12 +318,26 @@ class App:
             case _:
                 PowerUp.generateTeleportPower(self)
 
-    def draw(self):
+    def drawBackground(self):
+        utilities.drawImage(
+            self.screen,
+            self.textureManager.getTextureByName(self.bgImage),
+            constants.WINDOW_RECT.size,
+        )
         highlightBgRatio = self.highlightBgRemainingTime / constants.HIGHLIGHT_BG_TIME
         bgColor = utilities.lerpColors(
             constants.BACKGROUND_COLOR, constants.HIGHLIGHT_BG_COLOR, highlightBgRatio
         )
-        self.screen.fill(bgColor)  # clean screen
+
+        # Create a transparent surface
+        transparent_bg = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
+        transparent_bg.fill(bgColor)  # Red with 20 alpha
+
+        # Blit the transparent surface onto the main screen
+        self.screen.blit(transparent_bg, (0, 0))
+
+    def draw(self):
+        self.drawBackground()
 
         # draw objs
         for x in self.objs:

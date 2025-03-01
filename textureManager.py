@@ -13,6 +13,7 @@ class TextureName(Enum):
     LEMON = 7
     SLOW_BULLET = 8
     POISON = 9
+    GRASS = 10
 
 
 class TextureManager:
@@ -37,6 +38,7 @@ class TextureManager:
                 "snake-slow-bullet.png"
             ),
             TextureName.POISON: self.__loadAndGetImageByFileName("snake-poison.png"),
+            TextureName.GRASS: self.__loadAndGetImageByFileName("grass_v2.jpg"),
         }
 
     # private method
