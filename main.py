@@ -133,8 +133,8 @@ class App:
             self.handleEvents()
 
             # save input states
-            # self.pressed_keys = pygame.key.get_pressed()
-            # self.pressed_mouses = pygame.mouse.get_pressed()
+            self.pressed_keys = pygame.key.get_pressed()
+            self.pressed_mouses = pygame.mouse.get_pressed()
 
             ## Update
             self.update()

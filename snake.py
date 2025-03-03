@@ -75,13 +75,15 @@ class Snake(utilities.GameObject):
         if (
             gameState != main.GameState.Easy
             and self.remainingShootTime <= 0
-            and random.randint(0, 180) == 0  # 180 frames ~ 3 seconds
+            and random.randint(0, int(180 / gameState.value))
+            == 0  # 180 frames ~ 3 seconds
         ):
             if gameState == main.GameState.Medium:
                 self.shootBullet(self.direction)
+                self.remainingShootTime = constants.SNAKE_SHOOT_DELAY_TIME
             elif gameState == main.GameState.Hard:
                 self.shootMultiBullets()
-            self.remainingShootTime = constants.SNAKE_SHOOT_DELAY_TIME
+                self.remainingShootTime = constants.HARD_SNAKE_SHOOT_DELAY_TIME
 
     def update(self, app):
         self.reset()
