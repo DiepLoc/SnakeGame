@@ -9,10 +9,10 @@ import textureManager
 class Player(utilities.GameObject):
     def __init__(self):
         super().__init__(
+            "player",
             constants.PLAYER_SPEED,
             Vector2(0, 1),
         )
-        self.name = "player"
         self.collisionComp = CollisionComp(
             constants.START_PLAYER_X, constants.START_PLAYER_Y, constants.PLAYER_SIZE
         )

@@ -18,10 +18,12 @@ class CollisionComp:
             self.size + changeAmount, constants.TILE_SIZE.x / 2, 100
         )
 
-    def onSmoothMove(self, dt, speed, direction: Vector2):
+    def onSmoothMove(self, dt, speed, direction: Vector2, isScreenLimit=True):
         if direction.length() != 0:
             self.position += dt * speed * direction.normalize()
-            self.position = utilities.clampPosition(self.position)
+            # limit the movement of objects on the screen
+            if isScreenLimit:
+                self.position = utilities.clampPosition(self.position)
 
     def getDistance(self, other: CollisionComp):
         vec = self.position - other.position

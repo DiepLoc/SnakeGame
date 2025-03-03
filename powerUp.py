@@ -22,9 +22,8 @@ class PowerUp(utilities.GameObject):
         direction=Vector2(0, 1),
         lifeTime=None,
     ):
-        super().__init__(speed, direction)
+        super().__init__("power-up", speed, direction)
         self.image: TextureName = image
-        self.name = "power-up"
         self.collisionComp = CollisionComp(x, y, constants.POWER_UP_SIZE)
         self.powerInfo: PowerUpInfo = powerInfo
         self.color = color
@@ -45,7 +44,7 @@ class PowerUp(utilities.GameObject):
 
     def update(self, app):
         self.updateSpeedAndLastDirection(app)
-        self.collisionComp.onSmoothMove(app.dt, self.speed, self.direction)
+        self.collisionComp.onSmoothMove(app.dt, self.speed, self.direction, False)
         if self.remainingLifeTime is not None:
             self.remainingLifeTime -= app.dt
             if self.remainingLifeTime <= 0:

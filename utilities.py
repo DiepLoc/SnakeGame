@@ -1,5 +1,6 @@
 from pygame.math import Vector2
 import abc
+import math
 import random
 import numbers
 import constants
@@ -23,12 +24,31 @@ def clampPosition(position) -> Vector2:
     return Vector2(newX, newY)
 
 
+def getRandomDirection() -> Vector2:
+    return Vector2(random.random() * 2 - 1, random.random() * 2 - 1).normalize()
+
+
 direction_map = {
     (1, 0): 0,
     (-1, 0): 180,
     (0, 1): 90,
     (0, -1): 270,
 }
+
+
+def getAngleByVector(vec: Vector2) -> int:
+    if vec.length() == 0:
+        return 0
+
+    return math.atan2(vec.y, vec.x) * 180 / math.pi
+
+
+def sumDegreeAngles(a: float, b: float):
+    return (a + b + 360) % 360
+
+
+def getRotated90DegreesVector(vec: Vector2) -> Vector2:
+    return Vector2(-vec.y, vec.x)
 
 
 def getAngleBy4DVector(vec: Vector2) -> int:
@@ -43,7 +63,9 @@ def drawImage(
     direction: Vector2 = Vector2(0, 1),
     color=None,
 ):
-    angle = getAngleBy4DVector(direction) - 90
+    angle = sumDegreeAngles(
+        getAngleByVector(direction), -90
+    )  # getAngleBy4DVector(direction) - 90
     rotated_img = pygame.transform.rotate(
         img, -angle
     )  # Pygame rotates counterclockwise
@@ -91,8 +113,9 @@ class ShootBulletEventData:
 
 
 class GameObject(abc.ABC):
-    def __init__(self, speed, direction: Vector2):
+    def __init__(self, name, speed, direction: Vector2):
         super().__init__()
+        self.name = name
         self.speed = speed
         self.baseSpeed = speed
         self.direction: Vector2 = direction

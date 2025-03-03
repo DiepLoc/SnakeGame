@@ -9,8 +9,7 @@ import textureManager
 
 class Snake(utilities.GameObject):
     def __init__(self, x, y):
-        super().__init__(constants.SNAKE_SPEED, Vector2(1, 0))
-        self.name = "snake"
+        super().__init__("snake", constants.SNAKE_SPEED, Vector2(1, 0))
         self.head = SnakeHead(x, y, self)
         self.nodes: list[SnakeNode] = []
         for i in range(constants.INIT_NODE_LENGTH):
@@ -50,22 +49,38 @@ class Snake(utilities.GameObject):
         for i in self.nodes:
             i.color = constants.SNAKE_NODE_COLOR
 
-    def shootBullet(self):
+    def shootBullet(self, direction: Vector2):
         data = utilities.ShootBulletEventData(
-            self.head.collisionComp.position, self.direction
+            self.head.collisionComp.position, direction
         )
         pygame.event.post(
             pygame.event.Event(constants.SNAKE_SHOOT_BULLET_EVENT, {"data": data})
         )
 
+    def shootMultiBullets(self):
+        dir1 = utilities.getRandomDirection()
+        dir2 = utilities.getRotated90DegreesVector(dir1)
+        dir3 = utilities.getRotated90DegreesVector(dir2)
+        dir4 = utilities.getRotated90DegreesVector(dir3)
+        self.shootBullet(dir1)
+        self.shootBullet(dir2)
+        self.shootBullet(dir3)
+        self.shootBullet(dir4)
+
     def updateShoot(self, app):
+        import main
+
         self.remainingShootTime -= app.dt
+        gameState = app.getGameState()
         if (
-            app.getGameState() >= 1
+            gameState != main.GameState.Easy
             and self.remainingShootTime <= 0
-            and random.randint(0, 120) == 0
-        ):  # 120 frames ~ 2 seconds
-            self.shootBullet()
+            and random.randint(0, 180) == 0  # 180 frames ~ 3 seconds
+        ):
+            if gameState == main.GameState.Medium:
+                self.shootBullet(self.direction)
+            elif gameState == main.GameState.Hard:
+                self.shootMultiBullets()
             self.remainingShootTime = constants.SNAKE_SHOOT_DELAY_TIME
 
     def update(self, app):
@@ -164,7 +179,6 @@ class SnakeNode:
         self.collisionComp = CollisionComp(x, y, constants.SNAKE_SIZE)
         self.color = color
         self.snake = snake
-        self.name = "snake-node"
 
     def update(self, nextNode):
         self.updatePosition(nextNode.collisionComp.position)

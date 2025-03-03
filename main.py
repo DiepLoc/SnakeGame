@@ -9,6 +9,7 @@ from player import Player
 import snake
 import textureManager
 import soundManager
+from enum import Enum
 from powerUp import PowerUp, TeleportInfo, PoisonInfo
 
 pygame.init()
@@ -17,6 +18,12 @@ pygame.font.init()
 # you have to call this at the start, if you want to use this module.
 pygame.mixer.init()
 my_font = pygame.font.SysFont("Comic Sans MS", 30)
+
+
+class GameState(Enum):
+    Easy = 1
+    Medium = 2
+    Hard = 3
 
 
 class App:
@@ -46,12 +53,12 @@ class App:
         self.observers: list[utilities.Observer] = []
         self.observers.append(self.soundManager)
 
-    def getGameState(self) -> int:
+    def getGameState(self) -> GameState:
         if self.playerPoint < 10:
-            return 0
-        if self.playerPoint < 20:
-            return 1
-        return 2
+            return GameState.Easy
+        if self.playerPoint < 15:
+            return GameState.Medium
+        return GameState.Hard
 
     # run per new game
     def reset(self):
@@ -223,7 +230,7 @@ class App:
                     self.onGenerateRandomPower()
 
     def checkShouldGeneratePoison(self):
-        if self.getGameState() == 0:
+        if self.getGameState() == GameState.Easy:
             return False
 
         checkPoisonObj = lambda obj: hasattr(obj, "powerInfo") and isinstance(
