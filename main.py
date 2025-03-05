@@ -10,7 +10,7 @@ import snake
 import textureManager
 import soundManager
 from enum import Enum
-from powerUp import PowerUp, TeleportInfo, PoisonInfo
+from powerUp import PowerUp, TeleportInfo, PoisonInfo, SlowBulletInfo
 
 pygame.init()
 # you have to call this at the start, if you want to use this module.
@@ -213,17 +213,27 @@ class App:
     def powerUpUpdate(self):
         self.remaningSpawnPowerTime -= self.dt
 
+        checkIsGoodPower = (
+            lambda obj: obj.name == "power-up"
+            and not isinstance(obj.powerInfo, PoisonInfo)
+            and not isinstance(obj.powerInfo, SlowBulletInfo)
+            and not isinstance(obj.powerInfo, TeleportInfo)
+        )
         if self.remaningSpawnPowerTime <= 0:
-            powerUpCount = self.getObjCountByCondition(
-                lambda obj: obj.name == "power-up"
-            )
+            goodPowerUpCount = self.getObjCountByCondition(checkIsGoodPower)
+            # power-ups appear more frequently as the player gets higher in score.
             nextPowerUpSpawnTime = max(
                 constants.MIN_POWER_UP_SPAWN_DELAY_TIME,
-                constants.POWER_UP_SPAWN_DELAY_TIME - self.playerPoint / 30,
+                constants.POWER_UP_SPAWN_DELAY_TIME - self.playerPoint / 20,
+            )
+
+            nextPowerUpSpawnTime = nextPowerUpSpawnTime + goodPowerUpCount / (
+                goodPowerUpCount + 1
             )
             self.remaningSpawnPowerTime = nextPowerUpSpawnTime
+            print(nextPowerUpSpawnTime)
 
-            if powerUpCount < constants.MAX_POWER_UP_COUNT:
+            if goodPowerUpCount < constants.MAX_POWER_UP_COUNT:
                 if self.checkShouldGeneratePoison():
                     self.onGeneratePoision()
                 else:
@@ -366,8 +376,9 @@ class App:
 
         # draw player point
         playerSpeed = "{:.2f}".format(self.player.speed)
+        playerBaseSpeed = "{:.2f}".format(self.player.baseSpeed)
         playerSize = self.player.collisionComp.size
-        txt = f"Points: {self.playerPoint}, Speed: {playerSpeed}, Size: {playerSize}"
+        txt = f"Points: {self.playerPoint}, Speed: {playerSpeed}({playerBaseSpeed}), Size: {playerSize}"
         point_surface = my_font.render(txt, False, "black")
         self.screen.blit(point_surface, (0, 0))
 
