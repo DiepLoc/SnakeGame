@@ -15,8 +15,13 @@ class CollisionComp:
 
     def changeSize(self, changeAmount):
         self.size = utilities.clamp(
-            self.size + changeAmount, constants.TILE_SIZE.x / 2, 100
+            self.size + changeAmount,
+            constants.TILE_SIZE.x / 2,
+            constants.TILE_SIZE.x * 5,
         )
+
+    def isMinSize(self):
+        return self.size <= constants.TILE_SIZE.x / 2
 
     def onSmoothMove(self, dt, speed, direction: Vector2, isScreenLimit=True):
         if direction.length() != 0:

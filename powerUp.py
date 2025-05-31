@@ -168,7 +168,10 @@ class ChangeSizeInfo(PowerUpInfo):
         self.changeSizeVal = dSize
 
     def onPlayerApply(self, subject, target: Player):
-        target.collisionComp.changeSize(-self.changeSizeVal)  # downsize for player
+        if target.collisionComp.isMinSize():
+            target.upgradeBaseSpeed()
+        else:
+            target.collisionComp.changeSize(-self.changeSizeVal)  # downsize for player
         pygame.event.post(pygame.event.Event(constants.PLAYER_GET_CHOCOLATE_EVENT))
         return True
 
