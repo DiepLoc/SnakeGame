@@ -34,7 +34,7 @@ class PowerUp(utilities.GameObject):
         return [self]
 
     def checkIsAttactSnake(self):
-        return self.powerInfo.isSnakeAttactor()
+        return self.powerInfo.isSnakeAttractor()
 
     def handleCollision(self, target):
         if target.name == "player":
@@ -147,7 +147,7 @@ class PowerUpInfo(abc.ABC):
 
     @abc.abstractmethod
     # return True -> attract snake AI
-    def isSnakeAttactor(self) -> bool:
+    def isSnakeAttractor(self) -> bool:
         pass
 
 
@@ -159,7 +159,7 @@ class PoisonInfo(PowerUpInfo):
     def onSnakeApply(self, subject, target: sn.Snake):
         return False
 
-    def isSnakeAttactor(self) -> bool:
+    def isSnakeAttractor(self) -> bool:
         return False
 
 
@@ -179,7 +179,7 @@ class ChangeSizeInfo(PowerUpInfo):
         target.changeSize(self.changeSizeVal)  # upsize for snake
         return True
 
-    def isSnakeAttactor(self) -> bool:
+    def isSnakeAttractor(self) -> bool:
         return True
 
 
@@ -195,7 +195,7 @@ class SlowBulletInfo(PowerUpInfo):
     def onSnakeApply(self, subject, target: sn.Snake):
         return False
 
-    def isSnakeAttactor(self) -> bool:
+    def isSnakeAttractor(self) -> bool:
         return False
 
 
@@ -217,7 +217,7 @@ class TeleportInfo(PowerUpInfo):
     def onSnakeApply(self, subject, target: sn.Snake):
         return False
 
-    def isSnakeAttactor(self) -> bool:
+    def isSnakeAttractor(self) -> bool:
         return False
 
 
@@ -233,7 +233,7 @@ class AppleInfo(PowerUpInfo):
         target.addLength(2)
         return True
 
-    def isSnakeAttactor(self) -> bool:
+    def isSnakeAttractor(self) -> bool:
         return True
 
 
@@ -250,5 +250,5 @@ class SpeedUpInfo(PowerUpInfo):
         target.changeSpeed(self.speedUp / 4)
         return True
 
-    def isSnakeAttactor(self) -> bool:
+    def isSnakeAttractor(self) -> bool:
         return True
