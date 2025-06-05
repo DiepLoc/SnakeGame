@@ -38,6 +38,7 @@ class App:
         self.remaningSpawnPowerTime = constants.POWER_UP_SPAWN_DELAY_TIME
         self.events = []
         self.isGameOver = False
+        self.isQuit = False
         self.pressed_keys = []
         self.pressed_mouses = []
         self.playerPoint = 0
@@ -96,7 +97,7 @@ class App:
         for event in self.events:
             if event.type == pygame.QUIT:
                 self.running = False
-                pygame.quit()
+                self.isQuit = True
 
             if event.type == constants.PLAYER_DEAD_EVENT:
                 self.isGameOver = True
@@ -131,6 +132,8 @@ class App:
             # get events and handle
             self.events = pygame.event.get()
             self.handleEvents()
+            if self.isQuit:
+                return
 
             # save input states
             self.pressed_keys = pygame.key.get_pressed()
@@ -140,12 +143,16 @@ class App:
             self.update()
 
             ## Draw
+            if not pygame.display.get_init():
+                return
+
             self.draw()
 
             pygame.display.flip()
             self.dt = self.clock.tick(60) / 1000 * constants.GAME_SPEED_SCALE
 
-        self.run()
+        if not self.isQuit:
+            self.run()
 
     def onSpawnMoreSnake(self):
         # check max snake
@@ -384,3 +391,4 @@ class App:
 
 
 App().run()
+pygame.quit()
