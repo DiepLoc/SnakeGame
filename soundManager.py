@@ -10,7 +10,7 @@ class SoundName(Enum):
     POWER_UP = 2  # for lemon, chocolate pick up
     TELEPORT = 3
     HIT_SLOW = 4
-    DEAD = 4
+    DEAD = 5
 
 
 class SoundManager(utilities.Observer):
